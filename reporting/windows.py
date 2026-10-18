@@ -3,10 +3,10 @@
 Used by the dashboard job to turn raw daily readings into the numbers that end up
 on the weekly chart.
 
-⚠️ **This module is a copy, and it copied the bug.** The window arithmetic came
-from `metrics-stats` when the dashboard split into its own repository, and the
-same off-by-one came with it: the last full window of a series is dropped. One
-ticket covers both repositories because one defect is in both of them.
+The window arithmetic came from `metrics-stats` when the dashboard split into its
+own repository, and it shipped with the same off-by-one: the last full window of a
+series was dropped. BUG-2 fixed that here and in `metrics-stats`; keep the loop
+bound inclusive (`len - days + 1`) so the final window is counted.
 """
 
 from __future__ import annotations
@@ -26,7 +26,9 @@ def weekly_average(readings: Sequence[float], days: int) -> list[float]:
         return []
 
     averages: list[float] = []
-    for index in range(len(readings) - days):
+    # Every start index that still leaves a full window must be visited, so the
+    # final window ends *on* the last reading: the bound is inclusive.
+    for index in range(len(readings) - days + 1):
         chunk = readings[index : index + days]
         averages.append(sum(chunk) / days)
     return averages
